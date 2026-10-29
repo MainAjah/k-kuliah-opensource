@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Environment variables (jangan di-commit, gunakan .env.example sebagai contoh)
+.env
+
+# Logs
+*.log
+npm-debug.log*
