@@ -1,30 +1,92 @@
+# User API
+
+API sederhana untuk mengelola data pengguna, dibuat dengan Node.js, Express.js, dan MySQL. Proyek ini dipakai untuk praktikum kolaborasi GitHub: issue, branch, commit, pull request, dan code review.
+
+## Persyaratan
+
+- Node.js versi 18 atau lebih baru
+- npm (sudah terpasang bersama Node.js)
+- MySQL yang berjalan di komputer lokal, misalnya lewat XAMPP atau Laragon
+
+## Instalasi dan menjalankan
+
+1. Jalankan MySQL dari XAMPP atau Laragon.
+
+2. Salin file contoh konfigurasi menjadi `.env`:
+
+   ```bash
+   # macOS / Linux
+   cp .env.example .env
+
+   # Windows (Command Prompt)
+   copy .env.example .env
+   ```
+
+3. Buka `.env`, lalu sesuaikan `DB_USER`, `DB_PASSWORD`, dan `DB_PORT` dengan MySQL di komputer kamu. Jika port 3306 sudah dipakai aplikasi lain, jalankan MySQL di port lain (misalnya 3307) dan isi `DB_PORT` dengan port tersebut.
+
+4. Pasang dependency dan jalankan server:
+
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+Server berjalan di `http://localhost:3000`. Database dan tabel `users` dibuat otomatis saat server pertama kali dijalankan, lengkap dengan dua data pengguna contoh.
+
+## Konfigurasi (.env)
+
+| Variabel | Keterangan | Contoh |
+|---|---|---|
+| `PORT` | Port server API | `3000` |
+| `DB_HOST` | Alamat server MySQL | `127.0.0.1` |
+| `DB_PORT` | Port MySQL | `3306` |
+| `DB_USER` | Username MySQL | `root` |
+| `DB_PASSWORD` | Password MySQL (kosong untuk bawaan XAMPP/Laragon) | |
+| `DB_NAME` | Nama database | `userdb` |
+
 ## Dokumentasi API
 
-Base URL untuk pengembangan lokal:
+### Base URL
 
 ```text
 http://localhost:3000
 ```
 
-Semua endpoint mengembalikan respons dalam format JSON. Endpoint yang tidak membutuhkan parameter tetap memiliki tabel parameter untuk menjelaskan bahwa tidak ada parameter yang diperlukan.
+Semua endpoint menggunakan HTTP dan mengembalikan respons dalam format JSON. Untuk endpoint yang tidak menerima parameter, tabel parameter tetap disediakan untuk memperjelas penggunaannya.
+
+### Daftar endpoint
+
+| Method | Path | Deskripsi |
+|---|---|---|
+| GET | `/` | Memeriksa apakah API berjalan |
+| GET | `/health` | Memeriksa koneksi database |
+| GET | `/users` | Mengambil daftar pengguna |
+| GET | `/users/:id` | Mengambil satu pengguna berdasarkan ID |
+| POST | `/users/register` | Mendaftarkan pengguna baru |
+
+---
 
 ### 1. GET `/` — Cek API
 
 Memeriksa apakah server API berjalan.
 
-**Parameter**
+#### Parameter
+
+Endpoint ini tidak membutuhkan parameter.
 
 | Nama | Lokasi | Tipe | Wajib/opsional | Nilai bawaan | Keterangan |
 |---|---|---|---|---|---|
-| — | — | — | — | — | Tidak membutuhkan parameter. |
+| — | — | — | — | — | Tidak ada parameter yang diperlukan. |
 
-**Contoh request**
+#### Contoh request
 
 ```bash
 curl -i http://localhost:3000/
 ```
 
-**Respons sukses — HTTP 200 OK**
+#### Respons sukses
+
+**Status: `200 OK`**
 
 ```json
 {
@@ -32,35 +94,29 @@ curl -i http://localhost:3000/
 }
 ```
 
-**Kemungkinan respons error**
-
-Jika terjadi kesalahan yang tidak terduga di server:
-
-HTTP 500 Internal Server Error
-
-```json
-{
-  "error": "Terjadi kesalahan pada server"
-}
-```
+---
 
 ### 2. GET `/health` — Cek koneksi database
 
-Memeriksa apakah server dapat menjalankan query sederhana pada database MySQL.
+Memeriksa koneksi database dengan menjalankan query sederhana pada MySQL.
 
-**Parameter**
+#### Parameter
+
+Endpoint ini tidak membutuhkan parameter.
 
 | Nama | Lokasi | Tipe | Wajib/opsional | Nilai bawaan | Keterangan |
 |---|---|---|---|---|---|
-| — | — | — | — | — | Tidak membutuhkan parameter. |
+| — | — | — | — | — | Tidak ada parameter yang diperlukan. |
 
-**Contoh request**
+#### Contoh request
 
 ```bash
 curl -i http://localhost:3000/health
 ```
 
-**Respons sukses — HTTP 200 OK**
+#### Respons sukses
+
+**Status: `200 OK`**
 
 ```json
 {
@@ -69,9 +125,11 @@ curl -i http://localhost:3000/health
 }
 ```
 
-**Kemungkinan respons error**
+#### Kemungkinan respons error
 
-HTTP 503 Service Unavailable — ketika query pemeriksaan database gagal.
+**Status: `503 Service Unavailable`**
+
+Dikembalikan apabila query pemeriksaan database gagal.
 
 ```json
 {
@@ -80,36 +138,40 @@ HTTP 503 Service Unavailable — ketika query pemeriksaan database gagal.
 }
 ```
 
+---
+
 ### 3. GET `/users` — Mengambil daftar pengguna
 
-Mengambil daftar pengguna dari database, diurutkan berdasarkan `id` secara menaik. Endpoint ini mendukung pagination menggunakan query parameter `limit` dan `offset`.
+Mengambil daftar pengguna dari database berdasarkan urutan `id` menaik. Endpoint ini mendukung pagination melalui query parameter `limit` dan `offset`.
 
-**Parameter**
+#### Parameter
 
 | Nama | Lokasi | Tipe | Wajib/opsional | Nilai bawaan | Keterangan |
 |---|---|---|---|---|---|
 | `limit` | query | Integer | Opsional | `20` | Jumlah maksimum pengguna yang dikembalikan. Harus berupa bilangan bulat dari 1 sampai 100. |
 | `offset` | query | Integer | Opsional | `0` | Jumlah baris yang dilewati sebelum hasil dikembalikan. Harus berupa bilangan bulat minimal 0. |
 
-Nilai parameter dikonversi menjadi angka oleh API. Nilai yang bukan bilangan bulat atau berada di luar batas yang ditentukan akan menghasilkan HTTP 400 Bad Request.
+Validasi dilakukan setelah nilai query dikonversi menjadi angka. Nilai yang bukan bilangan bulat atau berada di luar batas yang ditentukan akan menghasilkan HTTP 400.
 
-**Contoh request**
+#### Contoh request
 
-Mengambil daftar pengguna dengan nilai bawaan:
+Mengambil daftar pengguna menggunakan nilai bawaan:
 
 ```bash
 curl -i http://localhost:3000/users
 ```
 
-Mengambil maksimal 10 pengguna, dimulai dari baris ke-5 yang dilewati:
+Mengambil maksimal 10 pengguna dengan melewati 5 baris pertama:
 
 ```bash
 curl -i "http://localhost:3000/users?limit=10&offset=5"
 ```
 
-**Respons sukses — HTTP 200 OK**
+#### Respons sukses
 
-Respons berupa array objek pengguna. Jika tidak ada data yang sesuai, API mengembalikan array kosong `[]`.
+**Status: `200 OK`**
+
+Respons berupa array objek pengguna. Contoh berikut menggunakan data ilustrasi.
 
 ```json
 [
@@ -128,11 +190,23 @@ Respons berupa array objek pengguna. Jika tidak ada data yang sesuai, API mengem
 ]
 ```
 
-Nilai `created_at` di atas merupakan ilustrasi format timestamp. Nilai sebenarnya berasal dari database.
+Jika tidak ada pengguna yang ditemukan, respons tetap berstatus `200 OK` dengan array kosong:
 
-**Kemungkinan respons error**
+```json
+[]
+```
 
-HTTP 400 Bad Request — `limit` bukan bilangan bulat antara 1 dan 100.
+#### Kemungkinan respons error
+
+**Status: `400 Bad Request` — `limit` tidak valid**
+
+Contoh request:
+
+```bash
+curl -i "http://localhost:3000/users?limit=101"
+```
+
+Respons:
 
 ```json
 {
@@ -140,7 +214,15 @@ HTTP 400 Bad Request — `limit` bukan bilangan bulat antara 1 dan 100.
 }
 ```
 
-HTTP 400 Bad Request — `offset` bukan bilangan bulat atau bernilai negatif.
+**Status: `400 Bad Request` — `offset` tidak valid**
+
+Contoh request:
+
+```bash
+curl -i "http://localhost:3000/users?offset=-1"
+```
+
+Respons:
 
 ```json
 {
@@ -148,7 +230,9 @@ HTTP 400 Bad Request — `offset` bukan bilangan bulat atau bernilai negatif.
 }
 ```
 
-HTTP 500 Internal Server Error — jika terjadi kesalahan server yang tidak ditangani secara khusus.
+**Status: `500 Internal Server Error`**
+
+Dapat terjadi apabila ada kesalahan server yang tidak ditangani secara khusus, misalnya kegagalan query database.
 
 ```json
 {
@@ -156,25 +240,31 @@ HTTP 500 Internal Server Error — jika terjadi kesalahan server yang tidak dita
 }
 ```
 
+---
+
 ### 4. GET `/users/:id` — Mengambil satu pengguna
 
-Mengambil satu pengguna berdasarkan ID. ID harus berupa bilangan bulat positif.
+Mengambil satu pengguna berdasarkan ID yang terdapat pada path URL.
 
-**Parameter**
+#### Parameter
 
 | Nama | Lokasi | Tipe | Wajib/opsional | Nilai bawaan | Keterangan |
 |---|---|---|---|---|---|
-| `id` | path | Integer | Wajib | Tidak ada | ID pengguna yang ingin diambil. Harus berupa bilangan bulat minimal 1. |
+| `id` | path | Integer | Wajib | Tidak ada | ID pengguna yang dicari. Harus berupa bilangan bulat positif, minimal 1. |
 
-**Contoh request**
+#### Contoh request
 
-Mengambil pengguna dengan ID 1:
+Mengambil pengguna dengan ID `1`:
 
 ```bash
 curl -i http://localhost:3000/users/1
 ```
 
-**Respons sukses — HTTP 200 OK**
+#### Respons sukses
+
+**Status: `200 OK`**
+
+Contoh respons apabila pengguna dengan ID `1` tersedia:
 
 ```json
 {
@@ -185,15 +275,9 @@ curl -i http://localhost:3000/users/1
 }
 ```
 
-**Kemungkinan respons error**
+#### Kemungkinan respons error
 
-HTTP 400 Bad Request — ID bukan bilangan bulat positif.
-
-```json
-{
-  "error": "ID harus berupa bilangan bulat positif"
-}
-```
+**Status: `400 Bad Request` — ID tidak valid**
 
 Contoh request:
 
@@ -201,13 +285,15 @@ Contoh request:
 curl -i http://localhost:3000/users/abc
 ```
 
-HTTP 404 Not Found — ID valid, tetapi pengguna tidak ditemukan.
+Respons:
 
 ```json
 {
-  "error": "Pengguna tidak ditemukan"
+  "error": "ID harus berupa bilangan bulat positif"
 }
 ```
+
+**Status: `404 Not Found` — pengguna tidak ditemukan**
 
 Contoh request:
 
@@ -215,7 +301,17 @@ Contoh request:
 curl -i http://localhost:3000/users/999999
 ```
 
-HTTP 500 Internal Server Error — jika terjadi kesalahan server yang tidak ditangani secara khusus.
+Respons jika ID tersebut tidak tersedia:
+
+```json
+{
+  "error": "Pengguna tidak ditemukan"
+}
+```
+
+**Status: `500 Internal Server Error`**
+
+Dapat terjadi apabila ada kesalahan server yang tidak ditangani secara khusus.
 
 ```json
 {
@@ -223,21 +319,25 @@ HTTP 500 Internal Server Error — jika terjadi kesalahan server yang tidak dita
 }
 ```
 
+---
+
 ### 5. POST `/users/register` — Mendaftarkan pengguna baru
 
-Endpoint ini menerima data pengguna dalam body JSON, memvalidasi data, menyimpan password sebagai hash, dan mengembalikan data pengguna yang baru dibuat tanpa menyertakan hash password.
+Mendaftarkan pengguna baru menggunakan data JSON. Password disimpan dalam bentuk hash, bukan sebagai teks biasa.
 
-**Parameter**
+#### Parameter
+
+Semua parameter dikirim melalui request body dengan format JSON.
 
 | Nama | Lokasi | Tipe | Wajib/opsional | Nilai bawaan | Keterangan |
 |---|---|---|---|---|---|
-| `name` | body | String | Wajib | Tidak ada | Nama tidak boleh kosong setelah spasi tepi dihapus. Maksimal 100 karakter. |
+| `name` | body | String | Wajib | Tidak ada | Tidak boleh kosong setelah spasi tepi dihapus. Maksimal 100 karakter. |
 | `email` | body | String | Wajib | Tidak ada | Harus memiliki format email yang valid, maksimal 255 karakter, dan belum terdaftar. Spasi tepi dihapus dan huruf diubah menjadi huruf kecil. |
-| `password` | body | String | Wajib | Tidak ada | Minimal 8 karakter. Tidak dihapus spasi tepinya. Password disimpan dalam bentuk hash. |
+| `password` | body | String | Wajib | Tidak ada | Tidak boleh berupa string kosong dan harus memiliki minimal 8 karakter. Spasi tidak dihapus dari awal atau akhir. |
 
-Body harus berupa objek JSON, bukan array, `null`, atau tipe JSON lainnya.
+Body harus berupa objek JSON. Array, `null`, dan tipe JSON lain yang bukan objek akan ditolak.
 
-**Contoh request**
+#### Contoh request
 
 ```bash
 curl -i -X POST http://localhost:3000/users/register \
@@ -249,7 +349,11 @@ curl -i -X POST http://localhost:3000/users/register \
   }'
 ```
 
-**Respons sukses — HTTP 201 Created**
+Gunakan email yang belum terdaftar agar pendaftaran berhasil.
+
+#### Respons sukses
+
+**Status: `201 Created`**
 
 ```json
 {
@@ -260,11 +364,11 @@ curl -i -X POST http://localhost:3000/users/register \
 }
 ```
 
-ID dan timestamp di atas merupakan ilustrasi. Respons aktual mengikuti data yang tersimpan di database.
+Nilai ID dan timestamp pada contoh merupakan ilustrasi. Respons aktual mengikuti data yang tersimpan di database. Field `password_hash` tidak disertakan dalam respons.
 
-**Kemungkinan respons error**
+#### Kemungkinan respons error
 
-HTTP 400 Bad Request — body bukan objek JSON yang valid untuk endpoint ini.
+**Status: `400 Bad Request` — body bukan objek JSON**
 
 ```json
 {
@@ -272,63 +376,7 @@ HTTP 400 Bad Request — body bukan objek JSON yang valid untuk endpoint ini.
 }
 ```
 
-HTTP 400 Bad Request — nama kosong atau bukan string.
-
-```json
-{
-  "error": "Field \"name\" wajib diisi dan tidak boleh kosong"
-}
-```
-
-HTTP 400 Bad Request — nama lebih dari 100 karakter.
-
-```json
-{
-  "error": "Field \"name\" maksimal 100 karakter"
-}
-```
-
-HTTP 400 Bad Request — email kosong atau bukan string.
-
-```json
-{
-  "error": "Field \"email\" wajib diisi dan tidak boleh kosong"
-}
-```
-
-HTTP 400 Bad Request — email tidak memenuhi format atau batas panjang yang ditentukan.
-
-```json
-{
-  "error": "Field \"email\" tidak berformat email yang valid"
-}
-```
-
-HTTP 400 Bad Request — password kosong atau bukan string.
-
-```json
-{
-  "error": "Field \"password\" wajib diisi"
-}
-```
-
-HTTP 400 Bad Request — password kurang dari 8 karakter.
-
-```json
-{
-  "error": "Field \"password\" minimal 8 karakter"
-}
-```
-
-HTTP 409 Conflict — email sudah terdaftar.
-
-```json
-{
-  "error": "Email sudah terdaftar"
-}
-```
-
-HTTP 400 Bad Request — body berisi JSON yang sintaksnya tidak valid.
+**Status: `400 Bad Request` — body berisi JSON yang sintaksnya tidak valid**
 
 ```json
 {
@@ -336,7 +384,65 @@ HTTP 400 Bad Request — body berisi JSON yang sintaksnya tidak valid.
 }
 ```
 
-HTTP 500 Internal Server Error — jika terjadi kesalahan server yang tidak ditangani secara khusus.
+**Status: `400 Bad Request` — nama kosong atau bukan string**
+
+```json
+{
+  "error": "Field \"name\" wajib diisi dan tidak boleh kosong"
+}
+```
+
+**Status: `400 Bad Request` — nama melebihi 100 karakter**
+
+```json
+{
+  "error": "Field \"name\" maksimal 100 karakter"
+}
+```
+
+**Status: `400 Bad Request` — email kosong atau bukan string**
+
+```json
+{
+  "error": "Field \"email\" wajib diisi dan tidak boleh kosong"
+}
+```
+
+**Status: `400 Bad Request` — format email tidak valid atau panjangnya melebihi 255 karakter**
+
+```json
+{
+  "error": "Field \"email\" tidak berformat email yang valid"
+}
+```
+
+**Status: `400 Bad Request` — password kosong atau bukan string**
+
+```json
+{
+  "error": "Field \"password\" wajib diisi"
+}
+```
+
+**Status: `400 Bad Request` — password kurang dari 8 karakter**
+
+```json
+{
+  "error": "Field \"password\" minimal 8 karakter"
+}
+```
+
+**Status: `409 Conflict` — email sudah terdaftar**
+
+```json
+{
+  "error": "Email sudah terdaftar"
+}
+```
+
+**Status: `500 Internal Server Error`**
+
+Dapat terjadi apabila ada kesalahan server yang tidak ditangani secara khusus.
 
 ```json
 {
@@ -344,9 +450,13 @@ HTTP 500 Internal Server Error — jika terjadi kesalahan server yang tidak dita
 }
 ```
 
-### Struktur objek pengguna
+---
 
-Endpoint `GET /users`, `GET /users/:id`, dan `POST /users/register` mengembalikan objek pengguna dengan struktur berikut:
+## Struktur objek pengguna
+
+Endpoint `GET /users` mengembalikan array objek pengguna, sedangkan `GET /users/:id` dan `POST /users/register` mengembalikan satu objek pengguna.
+
+Struktur objek pengguna:
 
 | Field | Tipe | Keterangan |
 |---|---|---|
@@ -355,11 +465,22 @@ Endpoint `GET /users`, `GET /users/:id`, dan `POST /users/register` mengembalika
 | `email` | String | Alamat email pengguna. |
 | `created_at` | Timestamp | Waktu pembuatan data pengguna. |
 
-Field `password_hash` tidak disertakan dalam respons API.
+Contoh:
 
-### Format umum respons error
+```json
+{
+  "id": 1,
+  "name": "Budi Santoso",
+  "email": "budi@example.com",
+  "created_at": "2026-10-29T02:00:00.000Z"
+}
+```
 
-Respons error menggunakan objek JSON dengan satu field `error` yang berisi pesan kesalahan.
+Field `password_hash` tidak dikembalikan oleh endpoint API tersebut.
+
+## Format umum respons error
+
+Sebagian besar respons error menggunakan objek JSON dengan field `error` yang berisi pesan kesalahan.
 
 ```json
 {
@@ -367,17 +488,17 @@ Respons error menggunakan objek JSON dengan satu field `error` yang berisi pesan
 }
 ```
 
-Namun, `GET /health` menggunakan struktur respons error khusus yang berisi field `status` dan `database`.
+Pengecualian terdapat pada endpoint `GET /health`, yang mengembalikan field `status` dan `database` ketika pemeriksaan koneksi database gagal.
 
-Status HTTP yang digunakan oleh API meliputi:
+## Ringkasan status HTTP
 
-| Status HTTP | Arti | Contoh kondisi |
+| Status HTTP | Arti | Kondisi |
 |---|---|---|
-| `200 OK` | Request berhasil. | Pemeriksaan API, pemeriksaan database, atau pengambilan data pengguna berhasil. |
+| `200 OK` | Request berhasil. | API berjalan, database dapat diakses, atau data pengguna berhasil diambil. |
 | `201 Created` | Resource berhasil dibuat. | Pendaftaran pengguna berhasil. |
-| `400 Bad Request` | Request atau parameter tidak valid. | `limit`, `offset`, atau ID tidak valid; body registrasi tidak valid. |
+| `400 Bad Request` | Request tidak valid. | Parameter tidak memenuhi aturan atau body registrasi tidak valid. |
 | `404 Not Found` | Resource atau route tidak ditemukan. | Pengguna tidak ditemukan atau route tidak dikenal. |
-| `409 Conflict` | Request bertentangan dengan data yang sudah ada. | Email sudah terdaftar. |
-| `500 Internal Server Error` | Terjadi kesalahan server yang tidak ditangani secara khusus. | Kesalahan database atau kesalahan internal lainnya. |
-| `503 Service Unavailable` | Layanan tidak dapat memenuhi pemeriksaan kesehatan. | Koneksi database gagal pada endpoint `/health`. |
+| `409 Conflict` | Terjadi konflik dengan data yang sudah ada. | Email sudah terdaftar. |
+| `500 Internal Server Error` | Terjadi kesalahan internal server. | Kesalahan yang tidak ditangani secara khusus. |
+| `503 Service Unavailable` | Layanan tidak tersedia untuk sementara. | Pemeriksaan koneksi database pada endpoint `/health` gagal. |
 
