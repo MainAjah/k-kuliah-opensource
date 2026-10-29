@@ -1,12 +1,14 @@
 const mysql = require('mysql2/promise');
 
 // Konfigurasi koneksi MySQL (XAMPP / Laragon)
+
 const dbConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
-  port: 3306,
+  port: Number(process.env.DB_PORT) || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
 };
+
 
 const DB_NAME = process.env.DB_NAME || 'userdb';
 
